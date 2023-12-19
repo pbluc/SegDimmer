@@ -4,12 +4,14 @@ using UnityEngine;
 using UnityEngine.XR.MagicLeap;
 using UnityEngine.UI;
 
-public class SimpleCamera : MonoBehaviour
+public class Dimming : MonoBehaviour
 {
     [SerializeField]
     private TMPro.TextMeshProUGUI _debugText;
     [SerializeField]
     private GameObject _target;
+    [SerializeField]
+    private Renderer _dimmingRenderer;
     [SerializeField]
     private GameObject _plane;
     [SerializeField, Tooltip("Desired width for the camera capture")]
@@ -30,6 +32,7 @@ public class SimpleCamera : MonoBehaviour
 
     private Renderer _planeRenderer;
     private Texture2D _videoTextureRgb;
+    private Texture2D _staggeredVideoTextureRgb;
 
     private float _waitTime = 2.0f;
     private float _timer = 0.0f;
@@ -48,7 +51,7 @@ public class SimpleCamera : MonoBehaviour
         _planeRenderer = _plane.GetComponent<Renderer>();
 
         _mainCamera = Camera.main;
-        //_debugText.text += String.Format("cam.pixelWidth = {0}, cam.pixelHeight = {1}\n", cam.pixelWidth, cam.pixelHeight);
+        _debugText.text += String.Format("  Virtual Camera width = {0} and height = {1}\n", _mainCamera.pixelWidth, _mainCamera.pixelHeight);
 
         //This script assumes that camera permissions were already granted.
         StartCoroutine(EnableMLCamera());
@@ -72,7 +75,16 @@ public class SimpleCamera : MonoBehaviour
                 if (InFrontOfCamera())
                 {
                     Rect targetBoundingBox = GetBoundingBox();
-                    ProcessPixels(targetBoundingBox);
+                    if (_videoTextureRgb != null) {
+                        _debugText.text += String.Format("  Texture2D Renderer width: {0} and height: {1}\n", _videoTextureRgb.width, _videoTextureRgb.height);
+
+                        CopyTexture();
+
+                        float calculatedAvgBrightness = ProcessPixels(targetBoundingBox);
+                        DimObject(calculatedAvgBrightness);
+
+                        _debugText.text += String.Format("  Display Opacity of Dimming Material: {0}\n", _dimmingRenderer.material.GetFloat("_DimmingValue"));
+                    } 
                 }
 
                 // Remove the recorded 2 seconds.
@@ -81,23 +93,45 @@ public class SimpleCamera : MonoBehaviour
         }
     }
 
-    private void ProcessPixels(Rect boundingBox)
+    private void CopyTexture()
     {
-        Debug.LogFormat("SimpleCamera.cs is _videoTextureRgb null: {0}", _videoTextureRgb == null);
-        //_debugText.text += String.Format("SimpleCamera.cs is _videoTextureRgb null: {0}\n", _videoTextureRgb == null);
+        if (_staggeredVideoTextureRgb != null &&
+            (_staggeredVideoTextureRgb.width != _videoTextureRgb.width || _staggeredVideoTextureRgb.height != _videoTextureRgb.height)) 
+        {
+            Destroy(_staggeredVideoTextureRgb);
+            _staggeredVideoTextureRgb = null;
+        }
 
-        int minX = (int)boundingBox.x;
-        int maxX = (int)(boundingBox.x + boundingBox.width);
-        int minY = (int)boundingBox.y;
-        int maxY = (int)(boundingBox.y + boundingBox.height);
+        if (_staggeredVideoTextureRgb == null) {
+            _staggeredVideoTextureRgb = new Texture2D(_videoTextureRgb.width, _videoTextureRgb.height, TextureFormat.RGBA32, false);
+            _staggeredVideoTextureRgb.filterMode = FilterMode.Bilinear;
+        }
+
+        _staggeredVideoTextureRgb.SetPixels(_videoTextureRgb.GetPixels());
+        _staggeredVideoTextureRgb.Apply();
+    }
+
+    private void DimObject(float threshold) 
+    {
+        _dimmingRenderer.material.SetFloat("_DimmingValue", threshold);
+    }
+
+    private float ProcessPixels(Rect boundingBox)
+    {
+        
+        int minX = (int) Mathf.Max(0, boundingBox.x);
+        int maxX = (int) Mathf.Min(_staggeredVideoTextureRgb.width, boundingBox.x + boundingBox.width);
+        int minY = (int) Mathf.Max(0, boundingBox.y);
+        int maxY = (int) Mathf.Min(_staggeredVideoTextureRgb.height, boundingBox.y + boundingBox.height);
 
         float averageLuminance = 0;
         int numPixels = 0;
-        for (int i = minX; i < maxX; i += PIXEL_PROCESSING_STRIDE_X)
+        for (int y = minY; y < maxY; y += PIXEL_PROCESSING_STRIDE_Y)
         {
-            for (int j = minY; j < minY; j += PIXEL_PROCESSING_STRIDE_Y)
+            for (int x = minX; x < maxX; x += PIXEL_PROCESSING_STRIDE_X)
             {
-                Color pixel = _videoTextureRgb.GetPixel(i, j);
+                Color pixel = _staggeredVideoTextureRgb.GetPixel(y, x);
+
                 float luminance = 0.2126f * pixel.r +
                                   0.7152f * pixel.g +
                                   0.0722f * pixel.b;
@@ -107,8 +141,9 @@ public class SimpleCamera : MonoBehaviour
             }
         }
         averageLuminance /= numPixels;
-        Debug.LogFormat("Average luminance in bounding box: {0}", averageLuminance);
-        _debugText.text += String.Format("Average luminance in bounding box: {0}\n", averageLuminance);
+        _debugText.text += String.Format("  Average luminance in bounding box: {0}\n", averageLuminance);
+        
+        return averageLuminance;
     }
 
     public bool InFrontOfCamera()
@@ -121,18 +156,17 @@ public class SimpleCamera : MonoBehaviour
         float scalingValue = 0.25f;
 
         BoxCollider boxCollider = _target.GetComponent<BoxCollider>();
-        _debugText.text += String.Format("  Box collider size: {0}\n", boxCollider.size);
 
         var extentPoints = new Vector2[] 
         {
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f)),
-            WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f))
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, -boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, -boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f)),
+            _mainCamera.WorldToScreenPoint(transform.TransformPoint(boxCollider.center + new Vector3(-boxCollider.size.x * scalingValue, boxCollider.size.y * scalingValue, boxCollider.size.z * scalingValue) * 0.5f))
         };
 
         Vector2 lowerLeft = extentPoints[0];
@@ -144,17 +178,16 @@ public class SimpleCamera : MonoBehaviour
         }
 
         float x = lowerLeft.x;
-        float y = upperRight.y;
+        float y = lowerLeft.y;
         float width = upperRight.x - lowerLeft.x;
         float height = upperRight.y - lowerLeft.y;
 
-        Debug.LogFormat("Bounding box Rect: ( x = {0}, y = {1}, width = {2}, height {3})", x, y, width, height);
-        _debugText.text += String.Format("  Bounding box Rect: ( x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height);
-        _debugText.text += String.Format("  Texture2D width: {0} and height: {1}\n", _videoTextureRgb.width, _videoTextureRgb.height);
+        _debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height);
 
         return new Rect(x, y, width, height);
     }
 
+    // Convert to screen space of physical camera on Magic Leap 2
     private Vector2 WorldToScreenPoint(Vector3 worldPoint)
     {
         Vector3 transformPoint = Vector3.zero;
@@ -163,7 +196,6 @@ public class SimpleCamera : MonoBehaviour
         if (result.IsOk)
         {
             transformPoint = outMatrix.MultiplyPoint3x4(worldPoint);
-            //_debugText.text += String.Format("  World Point After Camera Proj: {0}\n", transformPoint);
 
             string cameraExtrinsics = "Camera Extrinsics";
             cameraExtrinsics += "Position " + outMatrix.GetPosition(); // (x, y)
@@ -178,7 +210,6 @@ public class SimpleCamera : MonoBehaviour
             float px = _resultExtras.Intrinsics.Value.PrincipalPoint.x;
             float py = _resultExtras.Intrinsics.Value.PrincipalPoint.y;
 
-            //_debugText.text += String.Format("  World Point After Camera Proj: {0}\n", transformPoint);
             Vector2 cameraIntPoint = new Vector3
                 (
                     Vector3.Dot(new Vector3(fx, 0, px), transformPoint),
@@ -196,7 +227,6 @@ public class SimpleCamera : MonoBehaviour
             //_debugText.text += String.Format(cameraIntrinsics + "\n");
         }
 
-        //_debugText.text += String.Format("  Screen point: {0}\n", transformPoint);
         return new Vector2(transformPoint.x, transformPoint.y);
     }
 
@@ -208,7 +238,7 @@ public class SimpleCamera : MonoBehaviour
         //Checks the main camera's availability.
         while (!_cameraDeviceAvailable)
         {
-            _debugText.text += String.Format("  Looking for MLCamera\n");
+            //_debugText.text += String.Format("  Looking for MLCamera\n");
             MLResult result = MLCamera.GetDeviceAvailabilityStatus(_identifier, out _cameraDeviceAvailable);
             if (result.IsOk == false || _cameraDeviceAvailable == false)
             {
@@ -233,7 +263,7 @@ public class SimpleCamera : MonoBehaviour
             _camera = MLCamera.CreateAndConnect(connectContext);
             if (_camera != null)
             {
-                _debugText.text += String.Format("  Camera device connected\n");
+                //_debugText.text += String.Format("  Camera device connected\n");
                 ConfigureCameraInput();
                 SetCameraCallbacks();
             }
@@ -286,11 +316,11 @@ public class SimpleCamera : MonoBehaviour
             _isCapturing = MLResult.DidNativeCallSucceed(result.Result, nameof(_camera.CaptureVideoStart));
             if (_isCapturing)
             {
-                _debugText.text += String.Format("  Video capture started!\n");
+                //_debugText.text += String.Format("  Video capture started!\n");
             }
             else
             {
-                _debugText.text += String.Format("  Could not start camera capture. Result : {0}\n", result);
+                //_debugText.text += String.Format("  Could not start camera capture. Result : {0}\n", result);
             }
         }
     }
@@ -368,7 +398,7 @@ public class SimpleCamera : MonoBehaviour
         //debugText.text += String.Format("videoTextureRGB.width = {0}, videoTextureRGB.height = {1}\n", videoTextureRGB.width, videoTextureRGB.height);
 
         // Assign the Plane Texture to the resulting texture
-        _planeRenderer.material.mainTexture = videoTextureRGB;
+        //_planeRenderer.material.mainTexture = videoTextureRGB;
     }
 
 }
