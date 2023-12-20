@@ -52,6 +52,7 @@ public class Dimming : MonoBehaviour
 
         _mainCamera = Camera.main;
         _debugText.text += String.Format("  Virtual Camera width = {0} and height = {1}\n", _mainCamera.pixelWidth, _mainCamera.pixelHeight);
+        MLSegmentedDimmer.Activate();
 
         //This script assumes that camera permissions were already granted.
         StartCoroutine(EnableMLCamera());
@@ -118,11 +119,14 @@ public class Dimming : MonoBehaviour
 
     private float ProcessPixels(Rect boundingBox)
     {
-        
-        int minX = (int) Mathf.Max(0, boundingBox.x);
-        int maxX = (int) Mathf.Min(_staggeredVideoTextureRgb.width, boundingBox.x + boundingBox.width);
-        int minY = (int) Mathf.Max(0, boundingBox.y);
-        int maxY = (int) Mathf.Min(_staggeredVideoTextureRgb.height, boundingBox.y + boundingBox.height);
+
+        int minX = (int)Mathf.Max(0, boundingBox.x);
+        int maxX = (int)Mathf.Min(_staggeredVideoTextureRgb.width, boundingBox.x + boundingBox.width);
+        int minY = (int)Mathf.Max(0, boundingBox.y);
+        int maxY = (int)Mathf.Min(_staggeredVideoTextureRgb.height, boundingBox.y + boundingBox.height);
+
+
+        _debugText.text += string.Format("  minX = {0}, maxX = {1}, minY = {2}, maxY = {3}\n", minX, maxX, minY, maxY);
 
         float averageLuminance = 0;
         int numPixels = 0;
@@ -179,8 +183,8 @@ public class Dimming : MonoBehaviour
 
         float x = lowerLeft.x;
         float y = lowerLeft.y;
-        float width = upperRight.x - lowerLeft.x;
-        float height = upperRight.y - lowerLeft.y;
+        float width = (upperRight.x - lowerLeft.x);
+        float height = (upperRight.y - lowerLeft.y);
 
         _debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height);
 
