@@ -124,6 +124,8 @@ public class Dimming : MonoBehaviour
         int minY = (int) Mathf.Max(0, boundingBox.y);
         int maxY = (int) Mathf.Min(_staggeredVideoTextureRgb.height, boundingBox.y + boundingBox.height);
 
+        _debugText.text += string.Format("  minX = {0}, maxX = {1}, minY = {2}, maxY = {3}\n", minX, maxX, minY, maxY);
+        // 
         float averageLuminance = 0;
         int numPixels = 0;
         for (int y = minY; y < maxY; y += PIXEL_PROCESSING_STRIDE_Y)
@@ -177,13 +179,13 @@ public class Dimming : MonoBehaviour
             upperRight = Vector2.Max(upperRight, v);
         }
 
-        float x = lowerLeft.x;
-        float y = lowerLeft.y;
-        float width = upperRight.x - lowerLeft.x;
-        float height = upperRight.y - lowerLeft.y;
+        float x = lowerLeft.x * 1280;
+        float y = lowerLeft.y * 720;
+        float width = (upperRight.x - lowerLeft.x) * 1280;
+        float height = (upperRight.y - lowerLeft.y) * 720;
 
         _debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height);
-
+        //-.4 -.4 1.8 1.8
         return new Rect(x, y, width, height);
     }
 
