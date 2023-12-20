@@ -34,7 +34,7 @@ public class Dimming : MonoBehaviour
     private Texture2D _videoTextureRgb;
     private Texture2D _staggeredVideoTextureRgb;
 
-    private float _waitTime = 2.0f;
+    private float _waitTime = 0.1f;
     private float _timer = 0.0f;
 
     //The camera capture state
@@ -69,7 +69,7 @@ public class Dimming : MonoBehaviour
         {
             _timer += Time.deltaTime;
 
-            // Check if we have reached beyond 2 seconds.
+            // Check if we have reached beyond 100 ms.
             // Subtracting two is more accurate over time than resetting to zero.
             if (_timer > _waitTime)
             {
@@ -88,7 +88,7 @@ public class Dimming : MonoBehaviour
                     } 
                 }
 
-                // Remove the recorded 2 seconds.
+                // Remove the recorded 100 ms.
                 _timer = _timer - _waitTime;
             }
         }
@@ -128,8 +128,6 @@ public class Dimming : MonoBehaviour
 
         _debugText.text += string.Format("  minX = {0}, maxX = {1}, minY = {2}, maxY = {3}\n", minX, maxX, minY, maxY);
 
-        _debugText.text += string.Format("  minX = {0}, maxX = {1}, minY = {2}, maxY = {3}\n", minX, maxX, minY, maxY);
-        // 
         float averageLuminance = 0;
         int numPixels = 0;
         for (int y = minY; y < maxY; y += PIXEL_PROCESSING_STRIDE_Y)
@@ -188,8 +186,7 @@ public class Dimming : MonoBehaviour
         float width = (upperRight.x - lowerLeft.x);
         float height = (upperRight.y - lowerLeft.y);
 
-        _debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height);
-        //-.4 -.4 1.8 1.8
+        _debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height); // -.4 -.4 1.8 1.8
         return new Rect(x, y, width, height);
     }
 
