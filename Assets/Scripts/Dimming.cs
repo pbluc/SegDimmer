@@ -9,8 +9,8 @@ public class Dimming : MonoBehaviour
     [SerializeField]
     private TMPro.TextMeshProUGUI _debugText;
     [SerializeField]
+    private TMPro.TextMeshProUGUI _currentDimmer;
     private GameObject _target;
-    [SerializeField]
     private Renderer _dimmingRenderer;
     [SerializeField]
     private GameObject _plane;
@@ -18,6 +18,19 @@ public class Dimming : MonoBehaviour
     private int _captureWidth = 1280;
     [SerializeField, Tooltip("Desired height for the camera capture")]
     private int _captureHeight = 720;
+
+    [SerializeField]
+    private GameObject cube;
+    [SerializeField]
+    private Renderer _cubeRenderer;
+    [SerializeField]
+    private GameObject sign;
+    [SerializeField]
+    private Renderer _signRenderer;
+    [SerializeField]
+    private GameObject tree;
+    [SerializeField]
+    private Renderer _treeRenderer;
 
     private Camera _mainCamera;
 
@@ -49,6 +62,7 @@ public class Dimming : MonoBehaviour
     {
         //_debugText.text += String.Format("  Debug logs start\n");
         _planeRenderer = _plane.GetComponent<Renderer>();
+        CubeDimmer();
 
         _mainCamera = Camera.main;
         //_debugText.text += String.Format("  Virtual Camera width = {0} and height = {1}\n", _mainCamera.pixelWidth, _mainCamera.pixelHeight);
@@ -61,6 +75,32 @@ public class Dimming : MonoBehaviour
     void OnDisable()
     {
         StopCapture();
+    }
+
+    public void CubeDimmer() {
+        _target = cube;
+        _dimmingRenderer = _cubeRenderer;
+        _currentDimmer.text = "Cube dimmer is activated";
+    }
+
+    public void SignDimmer()
+    {
+        _target = sign;
+        _dimmingRenderer = _signRenderer;
+        _currentDimmer.text = "Sign dimmer is activated";
+    }
+
+    public void TreeDimmer()
+    {
+        _target = tree;
+        _dimmingRenderer = _treeRenderer;
+        _currentDimmer.text = "Tree dimmer is activated";
+    }
+
+    public void DisableDimmer() {
+        _target = null;
+        _dimmingRenderer = null;
+        _currentDimmer.text = "Dimmer paused";
     }
 
     private void Update()
