@@ -51,7 +51,7 @@ public class Dimming : MonoBehaviour
         _planeRenderer = _plane.GetComponent<Renderer>();
 
         _mainCamera = Camera.main;
-        _debugText.text += String.Format("  Virtual Camera width = {0} and height = {1}\n", _mainCamera.pixelWidth, _mainCamera.pixelHeight);
+        //_debugText.text += String.Format("  Virtual Camera width = {0} and height = {1}\n", _mainCamera.pixelWidth, _mainCamera.pixelHeight);
         MLSegmentedDimmer.Activate();
 
         //This script assumes that camera permissions were already granted.
@@ -77,14 +77,14 @@ public class Dimming : MonoBehaviour
                 {
                     Rect targetBoundingBox = GetBoundingBox();
                     if (_videoTextureRgb != null) {
-                        _debugText.text += String.Format("  Texture2D Renderer width: {0} and height: {1}\n", _videoTextureRgb.width, _videoTextureRgb.height);
+                        //_debugText.text += String.Format("  Texture2D Renderer width: {0} and height: {1}\n", _videoTextureRgb.width, _videoTextureRgb.height);
 
                         CopyTexture();
 
                         float calculatedAvgBrightness = ProcessPixels(targetBoundingBox);
                         DimObject(calculatedAvgBrightness);
 
-                        _debugText.text += String.Format("  Display Opacity of Dimming Material: {0}\n", _dimmingRenderer.material.GetFloat("_DimmingValue"));
+                        //_debugText.text += String.Format("  Display Opacity of Dimming Material: {0}\n", _dimmingRenderer.material.GetFloat("_DimmingValue"));
                     } 
                 }
 
@@ -126,7 +126,7 @@ public class Dimming : MonoBehaviour
         int maxY = (int)Mathf.Min(_staggeredVideoTextureRgb.height, boundingBox.y + boundingBox.height);
 
 
-        _debugText.text += string.Format("  minX = {0}, maxX = {1}, minY = {2}, maxY = {3}\n", minX, maxX, minY, maxY);
+        //_debugText.text += string.Format("  minX = {0}, maxX = {1}, minY = {2}, maxY = {3}\n", minX, maxX, minY, maxY);
 
         float averageLuminance = 0;
         int numPixels = 0;
@@ -145,7 +145,7 @@ public class Dimming : MonoBehaviour
             }
         }
         averageLuminance /= numPixels;
-        _debugText.text += String.Format("  Average luminance in bounding box: {0}\n", averageLuminance);
+        _debugText.text = String.Format("  Average luminance in bounding box: {0}\n", averageLuminance);
         
         return averageLuminance;
     }
@@ -186,7 +186,7 @@ public class Dimming : MonoBehaviour
         float width = (upperRight.x - lowerLeft.x);
         float height = (upperRight.y - lowerLeft.y);
 
-        _debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height); // -.4 -.4 1.8 1.8
+        //_debugText.text += String.Format("  Bounding box Rect: (x = {0}, y = {1}, width = {2}, height {3})\n", x, y, width, height); // -.4 -.4 1.8 1.8
         return new Rect(x, y, width, height);
     }
 
