@@ -70,3 +70,15 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Test folders
+/test_BackUpThisFolder_ButDontShipItWithYourGame/
+/test_BurstDebugInformation_DoNotShip/
+/test2_BackUpThisFolder_ButDontShipItWithYourGame/
+/test2_BurstDebugInformation_DoNotShip/
+/test3_BackUpThisFolder_ButDontShipItWithYourGame/
+/test3_BurstDebugInformation_DoNotShip/
+/test4_BackUpThisFolder_ButDontShipItWithYourGame/
+/test4_BurstDebugInformation_DoNotShip/
+/test5_BackUpThisFolder_ButDontShipItWithYourGame/
+/test5_BurstDebugInformation_DoNotShip/
